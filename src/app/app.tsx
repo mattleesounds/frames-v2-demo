@@ -6,8 +6,7 @@ const ColorGame = dynamic(() => import("~/components/colorwars/ColorGame"), {
   ssr: false,
 });
 
-export default function App(
-  { title }: { title?: string } = { title: "Frames v2 Demo" }
-) {
+export default function App() {
+/* { title }: { title?: string } = { title: "Frames v2 Demo" } */
   return <ColorGame /* title={title} */ />;
 }
