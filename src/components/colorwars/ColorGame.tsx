@@ -1,7 +1,7 @@
-"use client";
 import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import sdk from "@farcaster/frame-sdk";
 import ColorPair from "./ColorPair";
 import Leaderboard from "./Leaderboard";
 import { Button } from "./Button";
@@ -12,11 +12,29 @@ import { supabase } from "../../lib/supabase/client";
 export default function ColorGame() {
   const queryClient = useQueryClient();
   const hasMounted = useRef(false);
+  const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [currentPair, setCurrentPair] = useState<[ColorData, ColorData] | null>(
     null
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Initialize Frame SDK
+  useEffect(() => {
+    const initializeSDK = async () => {
+      try {
+        await sdk.actions.ready();
+        setIsSDKLoaded(true);
+      } catch (error) {
+        console.error("Error initializing Frame SDK:", error);
+        setError("Failed to initialize Frame. Please try again.");
+      }
+    };
+
+    if (!isSDKLoaded) {
+      initializeSDK();
+    }
+  }, [isSDKLoaded]);
 
   // Fetch all color scores with pagination
   const { data: globalScores, isError: scoresError } = useQuery({
@@ -42,7 +60,6 @@ export default function ColorGame() {
 
         allScores.push(...data);
 
-        // If we've fetched all records, break
         if (data.length < pageSize || (count && allScores.length >= count))
           break;
 
@@ -51,8 +68,8 @@ export default function ColorGame() {
 
       return allScores;
     },
-    staleTime: 30000, // Consider data fresh for 30 seconds
-    gcTime: 5 * 60 * 1000, // Keep data in cache for 5 minutes before garbage collection
+    staleTime: 30000,
+    gcTime: 5 * 60 * 1000,
   });
 
   const voteMutation = useMutation({
@@ -113,7 +130,8 @@ export default function ColorGame() {
     };
   }, []);
 
-  if (typeof window === "undefined") return null;
+  // Wait for both SDK and window
+  if (typeof window === "undefined" || !isSDKLoaded) return null;
 
   if (error) {
     return (
